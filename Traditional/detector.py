@@ -1,3 +1,9 @@
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.spatial.distance import pdist
+
+
 def readImage(image_name):
     """
     Function to read a given image name
