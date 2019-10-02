@@ -1,9 +1,3 @@
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.spatial.distance import pdist
-
-
 def readImage(image_name):
     """
     Function to read a given image name
@@ -27,7 +21,7 @@ def showImage(image):
     cv2.destroyAllWindows()
 
 
-def computeKeypoints(image):    #Extract keypoints of the given image
+def computeKeypoints(image):
     """
     Function to compute keypoints of the given image
     :param image: An image of type numpy.ndarray
@@ -67,13 +61,14 @@ def featureExtraction(image):
     kp, desc = computeDescriptors(gray_img, kp)
     return kp, desc
 
+
 def featureMatching(keypoints, descriptors):
     """
     Function to perform feature matching. Makes use of brute force matcher.
     Reference: https://docs.opencv.org/trunk/dc/dc3/tutorial_py_matcher.html
     :param keypoints: A list of keypoints
     :param descriptors: A 2-dimensional array of shape (n, 128), whereby n is the number of keypoints
-    :return:
+    :return: A tuple (a, b) where a and b represents a 2-d array of keypoints
     """
 
     norm = cv2.NORM_L2  # cv2.NORM_L2 is used since we are using the SIFT algorithm
