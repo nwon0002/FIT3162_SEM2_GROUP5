@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import pdist
+from scipy.cluster import hierarchy
 
 
 def readImage(image_name):
@@ -121,3 +122,42 @@ def featureMatching(keypoints, descriptors):
 
     else:
         return None, None
+
+
+def hierarchicalClustering(points_1, points_2, metric, th):
+    points = np.vstack((points_1, points_2))     # vertically stack both sets of points
+    # distance = hierarchy.distance.pdist(points)  # compute pairwise distance
+    Z = hierarchy.linkage(points, metric)
+    C = hierarchy.fcluster(Z, t=th, criterion='inconsistent', depth=4)
+    return C
+
+
+def plotImage(img, p1, p2, C):
+    plt.imshow(img, cmap=plt.get_cmap('gray'), interpolation = 'bicubic')
+    plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
+    plt.scatter(p1[:, 0],p1[:, 1], c=C[0:p1.shape[0]], s=30)
+
+    # for (x1, y1), (x2, y2) in zip(p1, p2):
+    #     plt.plot([x1, x2],[y1, y2], 'c')
+
+    plt.show()
+
+
+def run(image):
+    kp, desc = featureExtraction(image)
+    p1, p2 = featureMatching(kp, desc)
+    showImage(image)
+
+    if p1 is None:
+        print("No tampering was found")
+        return
+
+    else:
+        C = hierarchicalClustering(p1, p2, 'ward', 2.2)
+        image = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
+        plotImage(image, p1, p2, C)
+
+
+if __name__ == "__main__":
+    img = readImage("forged.jpg")
+    run(img)
