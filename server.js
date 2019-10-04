@@ -28,15 +28,21 @@ var tsFormat = () => (new Date()).toLocaleTimeString();
 
 /* Winston Logger */
 var logger = winston.createLogger({
-
     transports: [
-      /* color output of logger to console */
-      new (winston.transports.Console)({ 
-          timestamp: tsFormat,
-          colorize: true ,
-          level : 'info'
-      })
+      new winston.transports.Console({ 
+                  level : 'info'
+        })
     ]
+  });
 
-});
+// var logger = new (winston.Logger)({
+//     transports: [
+//       /* color output of logger to console */
+//       new (winston.transports.Console)({ 
+//           timestamp: tsFormat,
+//           colorize: true ,
+//           level : 'info'
+//         })
+//     ]
+// });
 logger.info("Thank you for using this program!");
