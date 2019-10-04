@@ -1,4 +1,3 @@
-import timeit
 import cv2
 import imutils
 import numpy as np
@@ -182,5 +181,5 @@ def run(image):
 
 
 if __name__ == "__main__":
-    img = readImage("small_forged_(1).jpg")
+    img = readImage("original.jpg")
     run(img)
