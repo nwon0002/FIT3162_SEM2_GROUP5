@@ -3,7 +3,7 @@
 /* Class constructor 
 Link sections to html page
 */
-function ImageDetection(){
+function ImageForgeryDetection(){
     this.socket = io.connect();
     this.uploadButton = document.getElementById("Upload Button");
 
