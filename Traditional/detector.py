@@ -1,8 +1,12 @@
+import timeit
 import cv2
+import imutils
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.spatial.distance import pdist
+import scipy.spatial.distance as scipyd
 from scipy.cluster import hierarchy
+from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import StandardScaler
 
 
 def readImage(image_name):
@@ -11,19 +15,16 @@ def readImage(image_name):
     :param image_name: A string representing the name of the image
     :return: The image represented in a numpy.ndarray type
     """
-    img = cv2.imread(image_name)
-    return img
-
+    return cv2.imread(str(image_name))
 
 def showImage(image):
     """
-    Function to display the image to the user. Closes the image window when user presses key "0"
+    Function to display the image to the user. Closes the image window when user presses any key
     :param image: An image of type numpy.ndarray
     :return: None
     """
-    cv2.namedWindow('image', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('image', 600, 600)  # Resize image window for better visuals
-    cv2.imshow('image',image)
+    image = imutils.resize(image, width=600)
+    cv2.imshow('image', image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
@@ -35,8 +36,7 @@ def computeKeypoints(image):
     :return: A list of keypoints
     """
     sift = cv2.xfeatures2d.SIFT_create()
-    kp = sift.detect(image)
-    return kp
+    return sift.detect(image)
 
 
 def computeDescriptors(image, keypoints):
@@ -60,9 +60,6 @@ def featureExtraction(image):
     :param image: An image of type numpy.ndarray
     :return: A tuple (keypoints, descriptors)
     """
-
-    # Image is converted to grayscale since color information would not help much.
-    # Reference: https://www.quora.com/In-image-processing-applications-why-do-we-convert-from-RGB-to-Grayscale
     gray_img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     kp = computeKeypoints(gray_img)
     kp, desc = computeDescriptors(gray_img, kp)
@@ -72,12 +69,10 @@ def featureExtraction(image):
 def featureMatching(keypoints, descriptors):
     """
     Function to perform feature matching. Makes use of brute force matcher.
-    Reference: https://docs.opencv.org/trunk/dc/dc3/tutorial_py_matcher.html
     :param keypoints: A list of keypoints
     :param descriptors: A 2-dimensional array of shape (n, 128), whereby n is the number of keypoints
     :return: A tuple (a, b) where a and b represents a 2-d array of keypoints
     """
-
     norm = cv2.NORM_L2  # cv2.NORM_L2 is used since we are using the SIFT algorithm
     k = 10  # number of closest match we want to find for each keypoint
 
@@ -97,7 +92,7 @@ def featureMatching(keypoints, descriptors):
 
         for i in range(1, k):
             # Compute pairwise distance between the two points to ensure they are spatially separated
-            if pdist(np.array([keypoints[match[i].queryIdx].pt, keypoints[match[i].trainIdx].pt])) > 10:
+            if hierarchy.distance.pdist(np.array([keypoints[match[i].queryIdx].pt, keypoints[match[i].trainIdx].pt])) > 10:
                 good_matches_1.append(keypoints[match[i].queryIdx])
                 good_matches_2.append(keypoints[match[i].trainIdx])
 
@@ -114,7 +109,6 @@ def featureMatching(keypoints, descriptors):
         p = np.hstack((points_1, points_2))
 
         # Remove any duplicated points
-        # References: https://stackoverflow.com/questions/16970982/find-unique-rows-in-numpy-array
         unique_p = np.unique(p, axis=0)
 
         # Get back normal shape: (n, 4) -> (n, 2) and (n, 2)
@@ -124,21 +118,45 @@ def featureMatching(keypoints, descriptors):
         return None, None
 
 
-def hierarchicalClustering(points_1, points_2, metric, th):
-    points = np.vstack((points_1, points_2))     # vertically stack both sets of points
-    # distance = hierarchy.distance.pdist(points)  # compute pairwise distance
-    Z = hierarchy.linkage(points, metric)
-    C = hierarchy.fcluster(Z, t=th, criterion='inconsistent', depth=4)
-    return C
+def dbscan(points1, points2):   # Density based spatial clustering
+    points = np.vstack((points1, points2))
+    scaled_hist = StandardScaler().fit_transform(points)
+
+    dist_matrix = scipyd.cdist(scaled_hist, scaled_hist, "cosine")
+    eps_value = 0.45 * dist_matrix.max()
+
+    db = DBSCAN(eps=eps_value, min_samples=10).fit(scaled_hist)
+    clusters = db.labels_
+
+    outliers_idx = np.where(clusters == -1)
+    outliers_idx = outliers_idx[::-1]
+
+    for i in range(len(outliers_idx)):
+        points = np.delete(points, outliers_idx[i], axis=0)
+
+    clusters = clusters[clusters != -1]
+
+    n = int(np.shape(points)[0]/2)
+    points1 = points[:n]
+    points2 = points[n:]
+    return clusters, points1, points2
 
 
 def plotImage(img, p1, p2, C):
-    plt.imshow(img, cmap=plt.get_cmap('gray'), interpolation = 'bicubic')
-    plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
-    plt.scatter(p1[:, 0],p1[:, 1], c=C[0:p1.shape[0]], s=30)
+    plt.imshow(img)
+    plt.axis('off')
 
-    # for (x1, y1), (x2, y2) in zip(p1, p2):
-    #     plt.plot([x1, x2],[y1, y2], 'c')
+    colors = C[:np.shape(p1)[0]]
+    plt.scatter(p1[:, 0], p1[:, 1], c=colors, s=30)
+
+    for item in zip(p1, p2):
+        x1 = item[0][0]
+        y1 = item[0][1]
+
+        x2 = item[1][0]
+        y2 = item[1][1]
+
+        plt.plot([x1, x2],[y1, y2], 'c')
 
     plt.show()
 
@@ -150,14 +168,19 @@ def run(image):
 
     if p1 is None:
         print("No tampering was found")
-        return
+        return False
 
-    else:
-        C = hierarchicalClustering(p1, p2, 'ward', 2.2)
-        image = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
-        plotImage(image, p1, p2, C)
+    clusters, p1, p2 = dbscan(p1, p2)
+
+    if len(clusters) == 0:
+        print("No tampering was found")
+        return False
+
+    image = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
+    plotImage(image, p1, p2, clusters)
+    return True
 
 
 if __name__ == "__main__":
-    img = readImage("forged.jpg")
+    img = readImage("small_forged_(1).jpg")
     run(img)
