@@ -1,7 +1,7 @@
 from tkinter import *
 from tkinter import filedialog, ttk, messagebox
 from PIL import ImageTk, Image
-from detector_2 import detect_copy_move, readImage
+from detector import detect_copy_move, readImage
 
 # Global variables
 IMG_WIDTH = 512
@@ -17,20 +17,10 @@ def getImage(path, width, height):
 
 class GUI(Frame):
     def __init__(self, parent=None):
-        self.parent = parent
-
-        # Ensure the program closes when window is closed
-        self.parent.protocol("WM_DELETE_WINDOW", self.parent.quit)
 
         # Initialize the frame
         Frame.__init__(self, parent)
-
-        # Set min size of the program
-        min_width = 1080
-        min_height = 800
-        parent.minsize(width=min_width, height=min_height)
         self.pack()
-
 
         # Label for the results of scan
         self.resultLabel = Label(self, text="COPY MOVE DETECTOR", font = ("Courier", 50))
@@ -73,7 +63,7 @@ class GUI(Frame):
         self.startButton.grid(row=5, column=0, columnspan=2, sticky="nsew", pady=5)
 
         # Button to exit the program
-        self.quitButton = ttk.Button(self, text="Exit program", command=self.parent.quit)
+        self.quitButton = ttk.Button(self, text="Exit program", command=parent.quit)
         self.quitButton.grid(row=6, column=0, columnspan=2, sticky="e", pady=5)
 
 
@@ -147,11 +137,26 @@ class GUI(Frame):
 
 
 
-if __name__ == "__main__":
+# Main Function
+def main():
+    # Initialize the app window
     root = Tk()
     root.title("Copy-Move Detector")
     root.iconbitmap('images/icon.ico')
 
+    # Ensure the program closes when window is closed
+    root.protocol("WM_DELETE_WINDOW", root.quit)
+
+    # Set min size of the program
+    min_width = 1080
+    min_height = 800
+    root.minsize(width=min_width, height=min_height)
+
     GUI(parent=root)
 
     root.mainloop()
+
+
+
+if __name__ == "__main__":
+    main()
