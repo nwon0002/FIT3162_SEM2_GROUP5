@@ -1,89 +1,157 @@
 from tkinter import *
-from tkinter import filedialog, ttk
+from tkinter import filedialog, ttk, messagebox
 from PIL import ImageTk, Image
 from detector_2 import detect_copy_move, readImage
 
+# Global variables
+IMG_WIDTH = 512
+IMG_HEIGHT = 512
+
+# Function to return an image as a PhotoImage object given its path
+def getImage(path, width, height):
+    img = Image.open(path)
+    img = img.resize((width, height), Image.ANTIALIAS)
+
+    return ImageTk.PhotoImage(img)
+
+
 class GUI(Frame):
     def __init__(self, parent=None):
+        self.parent = parent
+
+        # Ensure the program closes when window is closed
+        self.parent.protocol("WM_DELETE_WINDOW", self.parent.quit)
+
+        # Initialize the frame
         Frame.__init__(self, parent)
-        min_width = 500
-        min_height = 500
 
-        max_width = 1000
-        max_height = 1000
-
+        # Set min size of the program
+        min_width = 1080
+        min_height = 800
         parent.minsize(width=min_width, height=min_height)
-        parent.maxsize(width=max_width, height=max_height)
         self.pack()
 
-        self.resultLabel = Label(self, text="")
-        self.resultLabel.pack()
 
-        self.imagePanel = Label(self)
-        self.imagePanel.pack()
+        # Label for the results of scan
+        self.resultLabel = Label(self, text="COPY MOVE DETECTOR", font = ("Courier", 50))
+        self.resultLabel.grid(row=0, column=0, columnspan=2)
+        Grid.rowconfigure(self, 0, weight=1)
 
-        self.fileLabel = Label(self, text="No file selected", fg="grey")
-        self.fileLabel.pack()
+        # Get the blank image
+        blank_img = getImage("images/blank.png", IMG_WIDTH, IMG_HEIGHT)
 
-        self.startButton = ttk.Button(self, text="Start", command=self.runProg)
-        self.startButton.pack(side=BOTTOM, fill=X)
+        # Displays the input image
+        self.imagePanel = Label(self, image = blank_img)
+        self.imagePanel.image = blank_img
+        self.imagePanel.grid(row=1, column=0, padx=5)
 
-        self.uploadButton = ttk.Button(self, text="Upload Image", command=self.browseFile)
-        self.uploadButton.pack(side=BOTTOM, fill=X)
+        # Label to display the output image
+        self.resultPanel = Label(self, image = blank_img)
+        self.resultPanel.image = blank_img
+        self.resultPanel.grid(row=1, column=1, padx=5)
+
+        # Label to display the path of the input image
+        self.fileLabel = Label(self, text="No file selected", fg="grey", font = ("Times", 15))
+        self.fileLabel.grid(row=2, column=0, columnspan=2)
 
 
+        # Progress bar
+        self.progressBar = ttk.Progressbar(self, length=500)
+        self.progressBar.grid(row=3, column=0, columnspan=2)
+
+
+        # Configure the style of the buttons
+        s = ttk.Style()
+        s.configure('my.TButton', font=('Times', 15))
+
+        # Button to upload images
+        self.uploadButton = ttk.Button(self, text="Upload Image", style="my.TButton", command=self.browseFile)
+        self.uploadButton.grid(row=4, column=0, columnspan=2, sticky="nsew", pady=5)
+
+        # Button to run the detection algorithm
+        self.startButton = ttk.Button(self, text="Start", style="my.TButton", command=self.runProg)
+        self.startButton.grid(row=5, column=0, columnspan=2, sticky="nsew", pady=5)
+
+        # Button to exit the program
+        self.quitButton = ttk.Button(self, text="Exit program", command=self.parent.quit)
+        self.quitButton.grid(row=6, column=0, columnspan=2, sticky="e", pady=5)
+
+
+    # Function to browse through the computer to upload images
     def browseFile(self):
+        # Only accept jpg and png files
         filename = filedialog.askopenfilename(title="Select an image", filetype=[("Image file", "*.jpg *.png")])
 
+        # No file selected (User closes the browsing window)
         if filename == "":
             return
 
-        self.fileLabel.configure(text=filename)
-        img = Image.open(filename)
-        img = img.resize((512, 512), Image.ANTIALIAS)
-        img = ImageTk.PhotoImage(img)
+        self.progressBar['value'] = 0   # Reset the progress bar
+        self.fileLabel.configure(text=filename)     # Set the path name in the fileLabel
 
+        # Display the input image in imagePanel
+        img = getImage(filename, IMG_WIDTH, IMG_HEIGHT)
         self.imagePanel.configure(image=img)
         self.imagePanel.image = img
 
-        self.resultLabel.configure(text="")
 
+        # Display blank image in resultPanel
+        blank_img = getImage("images/blank.png", 512, 512)
+        self.resultPanel = Label(self, image = blank_img)
+        self.resultPanel.image = blank_img
+        self.resultPanel.grid(row=1, column=1, padx=5)
+
+
+
+        # Reset the resultLabel
+        self.resultLabel.configure(text="START SCAN", foreground="black")
+
+
+    # Function to run the program the copy-move detection algorithm
     def runProg(self):
+        # Retrieve the path of the image file
         path = self.fileLabel['text']
 
+        # User has not selected an input image
         if path == "No file selected":
+            messagebox.showerror('Error', "Please select image")    # Show error message
             return
 
+        # Convert image into a numpy array
         img = readImage(path)
 
-        result, img = detect_copy_move(img)
+        # Run copy-move detection algorithm
+        result = detect_copy_move(img)
 
+        # Set the progress bar to 100%
+        self.progressBar['value'] = 100
+
+        # If copy-move is detected
         if result:
-            img = Image.open("results.png")
-            # img = img.resize((512, 512), Image.ANTIALIAS)
-            img = ImageTk.PhotoImage(img)
+            # Retrieve the output image and display in resultPanel
+            img = getImage("results.png", IMG_WIDTH, IMG_HEIGHT)
+            self.resultPanel.configure(image=img)
+            self.resultPanel.image = img
 
-            self.imagePanel.configure(image=img)
-            self.imagePanel.image = img
-
-            self.resultLabel.configure(text="COPY-MOVE DETECTED")
+            # Display results in resultLabel
+            self.resultLabel.configure(text="COPY-MOVE DETECTED", foreground="red")
 
         else:
-            self.resultLabel.configure(text="ORIGINAL IMAGE")
+            # Retrieve the thumbs up image and display in resultPanel
+            img = getImage("images/thumbs_up.png", IMG_WIDTH, IMG_HEIGHT)
+            self.resultPanel.configure(image=img)
+            self.resultPanel.image = img
 
-
-
-
-
+            # Display results in resultLabel
+            self.resultLabel.configure(text="ORIGINAL IMAGE", foreground="green")
 
 
 
 if __name__ == "__main__":
     root = Tk()
     root.title("Copy-Move Detector")
-    root.configure(background='white')
+    root.iconbitmap('images/icon.ico')
 
     GUI(parent=root)
 
     root.mainloop()
-
