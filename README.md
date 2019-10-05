@@ -8,12 +8,15 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Prerequisites
 
-What libraries you need to install:
+Modules Needed:
 
 ```
-socket.io
-express
-winston
+NumPy
+Matplotlib
+Scipy
+OpenCV v3.4.2.16
+OpenCV-contrib v3.4.2.16
+imutils
 ```
 
 ### Installing
@@ -21,21 +24,23 @@ winston
 In terminal:
 
 ```
-npm i socket.io
-npm i express
-npm i winston
+pip install numpy
+pip install matplotlib
+pip install scipy
+pip install opencv-python==3.4.2.16
+pip install opencv-contrib-python==3.4.2.16
+pip install imutils
 ```
 
 ## Deployment
 
-1. Open terminal at your desired editor
-2. Find path to where server.js is located
-3. node server.js
-4. Log on to ‘http://localhost:5000’
+1. Open desired terminal, for ease of use, we will be using Pycharm.
+2. Run, gui.py
+3. Follow instructions on GUI.
 
 ## Known Issues
 
-- Unresponsive page design as our aim mainly focus on the functionality. The view is built according to 13 inches screen-size but it still looks nice when it comes to 15 inches screen-size by turning the page to full screen.
+- Unresponsive page design as our aim mainly focus on the functionality.
 
 ## Versioning
 
