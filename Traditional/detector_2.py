@@ -3,6 +3,7 @@ import imutils
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.cluster import hierarchy
+from scipy.spatial.distance import pdist
 from collections import Counter
 
 
@@ -26,12 +27,13 @@ def featureExtraction(image):
 
 def featureMatching(keypoints, descriptors):
     norm = cv2.NORM_L2  # cv2.NORM_L2 is used since we are using the SIFT algorithm
-    k = 10  # number of closest match we want to find for each keypoint
+    k = 10  # number of closest match we want to find for each descriptor
 
-    matcher = cv2.BFMatcher(norm)
-    matches = matcher.knnMatch(descriptors, descriptors, k)
+    # uses a brute force matcher(compare each descriptor of desc1, with each descriptor of desc2...)
+    bf_matcher = cv2.BFMatcher(norm)
+    matches = bf_matcher.knnMatch(descriptors, descriptors, k)
 
-    # Apply ratio test to get good matches
+    # Apply ratio test to get good matches (2nn test)
     ratio = 0.5
     good_matches_1 = []
     good_matches_2 = []
@@ -43,37 +45,37 @@ def featureMatching(keypoints, descriptors):
             k += 1
 
         for i in range(1, k):
-            # Compute pairwise distance between the two points to ensure they are spatially separated
-            if hierarchy.distance.pdist(np.array([keypoints[match[i].queryIdx].pt, keypoints[match[i].trainIdx].pt])) > 10:
+            # Just to ensure points are spatially separated
+            if pdist(np.array([keypoints[match[i].queryIdx].pt, keypoints[match[i].trainIdx].pt]), "euclidean") > 10:
                 good_matches_1.append(keypoints[match[i].queryIdx])
                 good_matches_2.append(keypoints[match[i].trainIdx])
 
-    points_1 = []   # Shape (n, 2)
-    points_2 = []  # Shape (n, 2)
-    for i in range(np.shape(good_matches_1)[0]):
-        points_1.append(good_matches_1[i].pt)
-        points_2.append(good_matches_2[i].pt)
+    points_1 = [match.pt for match in good_matches_1]
+    points_2 = [match.pt for match in good_matches_2]
 
     if len(points_1) > 0:
-        p = np.hstack((points_1, points_2))  # column bind
-        unique_p = np.unique(p, axis=0)  # Remove any duplicated points
-        return np.float32(unique_p[:, 0:2]), np.float32(unique_p[:, 2:4])  # Get back normal shape: (n, 4) -> (n, 2) and (n, 2)
+        points = np.hstack((points_1, points_2))  # column bind
+        unique_points = np.unique(points, axis=0)  # Remove any duplicated points
+        return np.float32(unique_points[:, 0:2]), np.float32(unique_points[:, 2:4])
 
     else:
         return None, None
 
 
-def hierarchicalClustering(points_1, points_2, metric, th):
-    points = np.vstack((points_1, points_2))     # vertically stack both sets of points
-    distance = hierarchy.distance.pdist(points)
-    Z = hierarchy.linkage(distance, metric)
-    C = hierarchy.fcluster(Z, t=th, criterion='inconsistent', depth=4)
-    return filterOutliers(C, points)
+def hierarchicalClustering(points_1, points_2, metric, threshold):
+    points = np.vstack((points_1, points_2))     # vertically stack both sets of points (row bind)
+    dist_matrix = hierarchy.distance.pdist(points, metric='euclidean')  # obtain condensed distance matrix (needed in linkage function)
+    Z = hierarchy.linkage(dist_matrix, metric)
+
+    cluster = hierarchy.fcluster(Z, t=threshold, criterion='inconsistent', depth=4) # perform agglomerative hierarchical clustering
+    cluster, points = filterOutliers(cluster, points)   # Filter outliers
+
+    n = int(np.shape(points)[0]/2)
+    return cluster,  points[:n], points[n:]
 
 
 def filterOutliers(cluster, points):
     cluster_count = Counter(cluster)
-
     to_remove = []  # Find clusters that does not have more than 3 points (remove them)
     for key in cluster_count:
         if cluster_count[key] <= 3:
@@ -89,30 +91,27 @@ def filterOutliers(cluster, points):
     for i in range(len(indices)):   # Remove points that belong to each unwanted cluster
         points = np.delete(points, indices[i], axis=0)
 
-    for i in range(len(to_remove)): # Remove unwanted clusters
+    for i in range(len(to_remove)):  # Remove unwanted clusters
         cluster = cluster[cluster != to_remove[i]]
 
-    n = int(np.shape(points)[0]/2)
-    points1 = points[:n]
-    points2 = points[n:]
-    return cluster, points1, points2
+    return cluster, points
 
 
-def plotImage(img, p1, p2, C):
+def plotImage(img, p1, p2, cluster):
     plt.imshow(img)
     plt.axis('off')
 
-    colors = C[:np.shape(p1)[0]]
+    colors = cluster[:np.shape(p1)[0]]
     plt.scatter(p1[:, 0], p1[:, 1], c=colors, s=30)
 
-    for item in zip(p1, p2):
-        x1 = item[0][0]
-        y1 = item[0][1]
+    for coord1, coord2 in zip(p1, p2):
+        x1 = coord1[0]
+        y1 = coord1[1]
 
-        x2 = item[1][0]
-        y2 = item[1][1]
+        x2 = coord2[0]
+        y2 = coord2[1]
 
-        plt.plot([x1, x2],[y1, y2], 'c')
+        plt.plot([x1, x2],[y1, y2], 'c', linestyle=':')
 
     plt.show()
 
@@ -128,11 +127,15 @@ def run(image):
 
     clusters, p1, p2 = hierarchicalClustering(p1, p2, 'ward', 2.2)
 
+    if len(clusters) == 0:
+        print("No tampering was found")
+        return False
+
     image = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
     plotImage(image, p1, p2, clusters)
     return True
 
 
 if __name__ == "__main__":
-    img = readImage("monash_copy.jpg")
+    img = readImage("fook_copy.jpg")
     run(img)
