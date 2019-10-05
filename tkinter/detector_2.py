@@ -119,7 +119,8 @@ def featureMatching(keypoints, descriptors):
 
 def hierarchicalClustering(points_1, points_2, metric, th):
     points = np.vstack((points_1, points_2))  # vertically stack both sets of points
-    Z = hierarchy.linkage(points, metric)
+    distance = hierarchy.distance.pdist(points)
+    Z = hierarchy.linkage(distance, metric)
     C = hierarchy.fcluster(Z, t=th, criterion='inconsistent', depth=4)
 
     C, points_1, points_2 = filterOutliers(C, points_1, points_2)
@@ -171,9 +172,9 @@ def plotImage(img, p1, p2, C):
         x2 = item[1][0]
         y2 = item[1][1]
 
-        plt.plot([x1, x2], [y1, y2], 'c')
+        plt.plot([x1, x2], [y1, y2], 'c', linestyle=":")
 
-    plt.savefig("results.png")
+    plt.savefig("results.png", bbox_inches='tight', pad_inches=0)
 
     plt.clf()
 
@@ -181,28 +182,20 @@ def plotImage(img, p1, p2, C):
 def detect_copy_move(image):
     kp, desc = featureExtraction(image)
     p1, p2 = featureMatching(kp, desc)
-    # showImage(image)
+    # showImage(image)x
 
     if p1 is None:
         # print("No tampering was found")
-        return False, image
+        return False
 
     clusters, p1, p2 = hierarchicalClustering(p1, p2, 'ward', 2.2)
 
+    if len(clusters) == 0:
+        # print("No tampering was found")
+        return False
+
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     plotImage(image, p1, p2, clusters)
-    return True, image
+    return True
 
 
-
-
-
-
-
-
-
-
-
-
-if __name__ == "__main__":
-    pass
