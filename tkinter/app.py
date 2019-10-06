@@ -86,11 +86,9 @@ class GUI(Frame):
 
 
         # Display blank image in resultPanel
-        blank_img = getImage("images/blank.png", 512, 512)
+        blank_img = getImage("images/blank.png", IMG_WIDTH, IMG_HEIGHT)
         self.resultPanel.configure(image=blank_img)
         self.resultPanel.image = blank_img
-
-
 
         # Reset the resultLabel
         self.resultLabel.configure(text="START SCAN", foreground="black")
@@ -145,11 +143,6 @@ def main():
 
     # Ensure the program closes when window is closed
     root.protocol("WM_DELETE_WINDOW", root.quit)
-
-    # Set min size of the program
-    min_width = 1080
-    min_height = 800
-    root.minsize(width=min_width, height=min_height)
 
     GUI(parent=root)
 
