@@ -116,7 +116,7 @@ def plotImage(img, p1, p2, cluster):
     plt.show()
 
 
-def run(image):
+def detectCopyMove(image):
     kp, desc = featureExtraction(image)
     p1, p2 = featureMatching(kp, desc)
     showImage(image)
@@ -134,8 +134,3 @@ def run(image):
     image = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
     plotImage(image, p1, p2, clusters)
     return True
-
-
-if __name__ == "__main__":
-    img = readImage("fook_copy.jpg")
-    run(img)
