@@ -81,7 +81,7 @@ def filterOutliers(cluster, points):
         if cluster_count[key] <= 3:
             to_remove.append(key)
 
-    indices = []    # find indices of points that corresponds to the cluster that needs to be removed
+    indices = np.array([])    # find indices of points that corresponds to the cluster that needs to be removed
     for i in range(len(to_remove)):
         indices = np.concatenate([indices, np.where(cluster == to_remove[i])], axis=None)
 
