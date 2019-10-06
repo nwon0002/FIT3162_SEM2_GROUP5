@@ -87,9 +87,8 @@ class GUI(Frame):
 
         # Display blank image in resultPanel
         blank_img = getImage("images/blank.png", 512, 512)
-        self.resultPanel = Label(self, image = blank_img)
+        self.resultPanel.configure(image=blank_img)
         self.resultPanel.image = blank_img
-        self.resultPanel.grid(row=1, column=1, padx=5)
 
 
 
