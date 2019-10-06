@@ -1,7 +1,7 @@
 from tkinter import *
 from tkinter import filedialog, ttk, messagebox
 from PIL import ImageTk, Image
-from detector_2 import detect_copy_move, readImage
+from detector import detect_copy_move, readImage
 
 class GUI(Frame):
     def __init__(self, parent=None):
