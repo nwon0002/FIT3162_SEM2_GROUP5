@@ -17,6 +17,7 @@ Scipy
 OpenCV v3.4.2.16
 OpenCV-contrib v3.4.2.16
 imutils
+Pillow
 ```
 
 ### Installing
@@ -30,12 +31,13 @@ pip install scipy
 pip install opencv-python==3.4.2.16
 pip install opencv-contrib-python==3.4.2.16
 pip install imutils
+pip install Pillow==6.2.0
 ```
 
 ## Deployment
 
 1. Open desired terminal, for ease of use, we will be using Pycharm.
-2. Run, gui.py
+2. Run, grid.py
 3. Follow instructions on GUI.
 
 ## Known Issues
@@ -48,9 +50,9 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 ## Authors
 
-* **Nelson Wei Han, Wong** - *28488563* - [contact](nwon0002@student.monash.edu)
-* **Nicholas Roosevelt, Wong** - *28839048* - [contact](nwon0007@student.monash.edu)
-* **Khai Yuan, Chee** - *28909429* - [contact](kche0028@student.monash.edu)
+* **Nelson Wei Han, Wong** - *28488563* - nwon0002@student.monash.edu
+* **Nicholas Roosevelt, Wong** - *28839048* - nwon0007@student.monash.edu
+* **Khai Yuan, Chee** - *28909429* - kche0028@student.monash.edu
 
 
 ## License
