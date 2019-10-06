@@ -97,7 +97,7 @@ def filterOutliers(cluster, points):
     return cluster, points
 
 
-def plotImage(img, p1, p2, cluster):
+def plotForgedRegion(img, p1, p2, cluster):
     plt.imshow(img)
     plt.axis('off')
 
@@ -132,5 +132,5 @@ def detectCopyMove(image):
         return False
 
     image = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
-    plotImage(image, p1, p2, clusters)
+    plotForgedRegion(image, p1, p2, clusters)
     return True
