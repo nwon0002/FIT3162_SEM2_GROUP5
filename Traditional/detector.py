@@ -31,21 +31,21 @@ def featureMatching(keypoints, descriptors):
 
     # uses a brute force matcher(compare each descriptor of desc1, with each descriptor of desc2...)
     bf_matcher = cv2.BFMatcher(norm)
-    matches = bf_matcher.knnMatch(descriptors, descriptors, k)
+    matches = bf_matcher.knnMatch(descriptors, descriptors, k)  # finds 10 closest matches for each desc in desc1 with desc in desc2
 
-    # Apply ratio test to get good matches (2nn test)
+    # apply ratio test to get good matches (2nn test)
     ratio = 0.5
     good_matches_1 = []
     good_matches_2 = []
 
     for match in matches:
-        k = 1   # Ignore the first element in the matches array (distance to itself is always 0)
+        k = 1   # ignore the first element in the matches array (distance to itself is always 0)
 
         while match[k].distance < ratio * match[k + 1].distance:  # d_i/d_(i+1) < T (threshold)
             k += 1
 
         for i in range(1, k):
-            # Just to ensure points are spatially separated
+            # just to ensure points are spatially separated
             if pdist(np.array([keypoints[match[i].queryIdx].pt, keypoints[match[i].trainIdx].pt]), "euclidean") > 10:
                 good_matches_1.append(keypoints[match[i].queryIdx])
                 good_matches_2.append(keypoints[match[i].trainIdx])
@@ -55,7 +55,7 @@ def featureMatching(keypoints, descriptors):
 
     if len(points_1) > 0:
         points = np.hstack((points_1, points_2))  # column bind
-        unique_points = np.unique(points, axis=0)  # Remove any duplicated points
+        unique_points = np.unique(points, axis=0)  # remove any duplicated points
         return np.float32(unique_points[:, 0:2]), np.float32(unique_points[:, 2:4])
 
     else:
@@ -64,11 +64,11 @@ def featureMatching(keypoints, descriptors):
 
 def hierarchicalClustering(points_1, points_2, metric, threshold):
     points = np.vstack((points_1, points_2))     # vertically stack both sets of points (row bind)
-    dist_matrix = hierarchy.distance.pdist(points, metric='euclidean')  # obtain condensed distance matrix (needed in linkage function)
+    dist_matrix = pdist(points, metric='euclidean')  # obtain condensed distance matrix (needed in linkage function)
     Z = hierarchy.linkage(dist_matrix, metric)
 
     cluster = hierarchy.fcluster(Z, t=threshold, criterion='inconsistent', depth=4) # perform agglomerative hierarchical clustering
-    cluster, points = filterOutliers(cluster, points)   # Filter outliers
+    cluster, points = filterOutliers(cluster, points)   # filter outliers
 
     n = int(np.shape(points)[0]/2)
     return cluster,  points[:n], points[n:]
@@ -76,22 +76,22 @@ def hierarchicalClustering(points_1, points_2, metric, threshold):
 
 def filterOutliers(cluster, points):
     cluster_count = Counter(cluster)
-    to_remove = []  # Find clusters that does not have more than 3 points (remove them)
+    to_remove = []  # find clusters that does not have more than 3 points (remove them)
     for key in cluster_count:
         if cluster_count[key] <= 3:
             to_remove.append(key)
 
-    indices = []    # Find indices of points that corresponds to the cluster that needs to be removed
+    indices = []    # find indices of points that corresponds to the cluster that needs to be removed
     for i in range(len(to_remove)):
         indices = np.concatenate([indices, np.where(cluster == to_remove[i])], axis=None)
 
     indices = indices.astype(int)
     indices = sorted(indices, reverse=True)
 
-    for i in range(len(indices)):   # Remove points that belong to each unwanted cluster
+    for i in range(len(indices)):   # remove points that belong to each unwanted cluster
         points = np.delete(points, indices[i], axis=0)
 
-    for i in range(len(to_remove)):  # Remove unwanted clusters
+    for i in range(len(to_remove)):  # remove unwanted clusters
         cluster = cluster[cluster != to_remove[i]]
 
     return cluster, points
