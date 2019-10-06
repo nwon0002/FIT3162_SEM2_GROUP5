@@ -1,73 +1,148 @@
-from detector_testing import detect_copy_move, readImage
-from glob import glob
-
-TP = 0  # True positive
-FP = 0  # False positive
-TN = 0  # True negative
-FN = 0  # False negative
-
-# Function to test the results of the copy-move forgery detection algorithm against the ground truth
-def test_images(paths, img_type):
-    assert img_type in ["original", "forged"], "img_type must be either 'original' or 'forged'"
-
-    global TP
-    global FP
-    global TN
-    global FN
-
-    for path in paths:
-        img = readImage(path)
-        result = detect_copy_move(img)
-
-        if result and img_type == "forged":
-            TP += 1
-
-        elif result and img_type == "original":
-            FP += 1
-
-        elif not result and img_type == "original":
-            TN += 1
-
-        elif not result and img_type == "forged":
-            FN += 1
+import cv2
+import imutils
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.cluster import hierarchy
+from scipy.spatial.distance import pdist
+from collections import Counter
 
 
-# Main Function
-def main():
-    # Test original images
-    original_path = './original/*'
-    original_paths = glob(original_path)
-    test_images(original_paths, "original")
-
-    # Test forged images
-    forged_path = './forged/*'
-    forged_paths = glob(forged_path)
-    test_images(forged_paths, "forged")
-
-    # Number of test images
-    n = len(original_paths) + len(forged_paths)
-
-    # Accuracy
-    acc = (TP + TN) / (TP + TN + FP + FN)
-
-    # True positive rate
-    TPR = TP / (TP + FN)
-
-    # False positive rate
-    FPR = FP / (FP + TN)
+def readImage(image_name):
+    """
+    Function to read a given image name
+    :param image_name: A string representing the name of the image
+    :return: The image represented in a numpy.ndarray type
+    """
+    return cv2.imread(str(image_name))
 
 
-    # Write results into a text file
-    filename = "test_results.txt"
-    with open(filename, "w+") as file:
-        file.write("Tested with " + str(n) + " images \n")
-        file.write("Original images: " + str(len(original_paths)) + "\n")
-        file.write("Forged imageas: " + str(len(forged_paths)) + "\n"
-                   )
-        file.write("Accuracy: " + str(acc) + "\n")
-        file.write("True Positive Rate: " + str(TPR) + "\n")
-        file.write("False Positive Rate: " + str(FPR) + "\n")
+def showImage(image):
+    """
+    Function to display the image to the user. Closes the image window when user presses any key
+    :param image: An image of type numpy.ndarray
+    :return: None
+    """
+    image = imutils.resize(image, width=600)
+    cv2.imshow('image', image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 
-if __name__ == "__main__":
-    main()
+def featureExtraction(image):
+    gray_img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    sift = cv2.xfeatures2d.SIFT_create()
+    kp, desc = sift.detectAndCompute(gray_img, None)
+    return kp, desc
+
+
+def featureMatching(keypoints, descriptors):
+    norm = cv2.NORM_L2  # cv2.NORM_L2 is used since we are using the SIFT algorithm
+    k = 10  # number of closest match we want to find for each descriptor
+
+    # uses a brute force matcher(compare each descriptor of desc1, with each descriptor of desc2...)
+    bf_matcher = cv2.BFMatcher(norm)
+    matches = bf_matcher.knnMatch(descriptors, descriptors, k)  # finds 10 closest matches for each desc in desc1 with desc in desc2
+
+    # apply ratio test to get good matches (2nn test)
+    ratio = 0.5
+    good_matches_1 = []
+    good_matches_2 = []
+
+    for match in matches:
+        k = 1   # ignore the first element in the matches array (distance to itself is always 0)
+
+        while match[k].distance < ratio * match[k + 1].distance:  # d_i/d_(i+1) < T (threshold)
+            k += 1
+
+        for i in range(1, k):
+            # just to ensure points are spatially separated
+            if pdist(np.array([keypoints[match[i].queryIdx].pt, keypoints[match[i].trainIdx].pt]), "euclidean") > 10:
+                good_matches_1.append(keypoints[match[i].queryIdx])
+                good_matches_2.append(keypoints[match[i].trainIdx])
+
+    points_1 = [match.pt for match in good_matches_1]
+    points_2 = [match.pt for match in good_matches_2]
+
+    if len(points_1) > 0:
+        points = np.hstack((points_1, points_2))  # column bind
+        unique_points = np.unique(points, axis=0)  # remove any duplicated points
+        return np.float32(unique_points[:, 0:2]), np.float32(unique_points[:, 2:4])
+
+    else:
+        return None, None
+
+
+def hierarchicalClustering(points_1, points_2, metric, threshold):
+    points = np.vstack((points_1, points_2))     # vertically stack both sets of points (row bind)
+    dist_matrix = pdist(points, metric='euclidean')  # obtain condensed distance matrix (needed in linkage function)
+    Z = hierarchy.linkage(dist_matrix, metric)
+
+    cluster = hierarchy.fcluster(Z, t=threshold, criterion='inconsistent', depth=4) # perform agglomerative hierarchical clustering
+    cluster, points = filterOutliers(cluster, points)   # filter outliers
+
+    n = int(np.shape(points)[0]/2)
+    return cluster,  points[:n], points[n:]
+
+
+def filterOutliers(cluster, points):
+    cluster_count = Counter(cluster)
+    to_remove = []  # find clusters that does not have more than 3 points (remove them)
+    for key in cluster_count:
+        if cluster_count[key] <= 3:
+            to_remove.append(key)
+
+    indices = np.array([])    # find indices of points that corresponds to the cluster that needs to be removed
+    for i in range(len(to_remove)):
+        indices = np.concatenate([indices, np.where(cluster == to_remove[i])], axis=None)
+
+    indices = indices.astype(int)
+    indices = sorted(indices, reverse=True)
+
+    for i in range(len(indices)):   # remove points that belong to each unwanted cluster
+        points = np.delete(points, indices[i], axis=0)
+
+    for i in range(len(to_remove)):  # remove unwanted clusters
+        cluster = cluster[cluster != to_remove[i]]
+
+    return cluster, points
+
+
+def plotImage(img, p1, p2, C):
+    plt.imshow(img)
+    plt.axis('off')
+
+    colors = C[:np.shape(p1)[0]]
+    plt.scatter(p1[:, 0], p1[:, 1], c=colors, s=30)
+
+    for item in zip(p1, p2):
+        x1 = item[0][0]
+        y1 = item[0][1]
+
+        x2 = item[1][0]
+        y2 = item[1][1]
+
+        plt.plot([x1, x2], [y1, y2], 'c', linestyle=":")
+
+    plt.clf()
+
+
+def detect_copy_move(image):
+    kp, desc = featureExtraction(image)
+    p1, p2 = featureMatching(kp, desc)
+    # showImage(image)x
+
+    if p1 is None:
+        # print("No tampering was found")
+        return False
+
+    clusters, p1, p2 = hierarchicalClustering(p1, p2, 'ward', 2.2)
+
+    if len(clusters) == 0:
+        # print("No tampering was found")
+        return False
+
+    # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    # plotImage(image, p1, p2, clusters)
+    return True
+
+
