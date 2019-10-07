@@ -4,8 +4,8 @@ from PIL import ImageTk, Image
 from detector import detect_copy_move, readImage
 
 # Global variables
-IMG_WIDTH = 512
-IMG_HEIGHT = 512
+IMG_WIDTH = 400
+IMG_HEIGHT = 400
 
 # Function to return an image as a PhotoImage object given its path
 def getImage(path, width, height):
@@ -17,6 +17,7 @@ def getImage(path, width, height):
 
 class GUI(Frame):
     def __init__(self, parent=None):
+        self.uploaded_image = None
 
         # Initialize the frame
         Frame.__init__(self, parent)
@@ -76,6 +77,7 @@ class GUI(Frame):
         if filename == "":
             return
 
+        self.uploaded_image = filename
         self.progressBar['value'] = 0   # Reset the progress bar
         self.fileLabel.configure(text=filename)     # Set the path name in the fileLabel
 
@@ -90,17 +92,19 @@ class GUI(Frame):
         self.resultPanel.configure(image=blank_img)
         self.resultPanel.image = blank_img
 
+
+
         # Reset the resultLabel
-        self.resultLabel.configure(text="START SCAN", foreground="black")
+        self.resultLabel.configure(text="READY TO SCAN", foreground="black")
 
 
     # Function to run the program the copy-move detection algorithm
     def runProg(self):
         # Retrieve the path of the image file
-        path = self.fileLabel['text']
+        path = self.uploaded_image
 
         # User has not selected an input image
-        if path == "No file selected":
+        if path is None:
             messagebox.showerror('Error', "Please select image")    # Show error message
             return
 
@@ -143,6 +147,8 @@ def main():
 
     # Ensure the program closes when window is closed
     root.protocol("WM_DELETE_WINDOW", root.quit)
+
+    root.state("zoomed")
 
     GUI(parent=root)
 
