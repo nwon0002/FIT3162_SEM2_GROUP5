@@ -37,7 +37,7 @@ pip install Pillow==6.2.0
 ## Deployment
 
 1. Open desired terminal, for ease of use, we will be using Pycharm.
-2. Run, grid.py
+2. Run, app.py
 3. Follow instructions on GUI.
 
 ## Known Issues
