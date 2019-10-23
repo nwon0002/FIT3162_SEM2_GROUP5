@@ -88,18 +88,39 @@ def featureMatching(keypoints, descriptors):
 
 
 def hierarchicalClustering(points_1, points_2, metric, threshold):
-    points = np.vstack((points_1, points_2))     # vertically stack both sets of points (row bind)
-    dist_matrix = pdist(points, metric='euclidean')  # obtain condensed distance matrix (needed in linkage function)
+    """
+    Function to perform hierarchical agglomerative clustering on the two sets of points
+    :param points_1: A 2d-array of shape (n, 2), where n is the number of points, and 2 is x and y coordinate
+    :param points_2: A 2d-array of shape (n, 2), where n is the number of points, and 2 is x and y coordinate
+    :param metric: The distance metric to use
+    :param threshold: The threshold to apply when forming clusters
+    :return: A triple (
+                An array of length n. T[i] is the flat cluster number to which original observation i belongs.
+                2d-array representing the first set of points,
+                2d-array representing the second set of points)
+    """
+    points = np.vstack((points_1, points_2))        #vertically stack both sets of points (row bind)
+    dist_matrix = pdist(points, metric='euclidean') #obtain condensed distance matrix (needed in linkage function)
     Z = hierarchy.linkage(dist_matrix, metric)
 
-    cluster = hierarchy.fcluster(Z, t=threshold, criterion='inconsistent', depth=4) # perform agglomerative hierarchical clustering
-    cluster, points = filterOutliers(cluster, points)   # filter outliers
+    #perform agglomerative hierarchical clustering
+    cluster = hierarchy.fcluster(Z, t=threshold, criterion='inconsistent', depth=4)
+    #filter outliers
+    cluster, points = filterOutliers(cluster, points)
 
     n = int(np.shape(points)[0]/2)
-    return cluster,  points[:n], points[n:]
+    return cluster, points[:n], points[n:]
 
 
 def filterOutliers(cluster, points):
+    """
+    Function to filter the outliers in the image
+    :param cluster: An array of length n. T[i] is the flat cluster number to which original observation i belongs.
+    :param points: A 2d-array representing the candidate points in the image
+    :return: A tuple (
+                An 1d-array representing the cluster that each point correspond to,
+                A 2d-array representing the candidate points after removing outliers)
+    """
     cluster_count = Counter(cluster)
     to_remove = []  # find clusters that does not have more than 3 points (remove them)
     for key in cluster_count:
