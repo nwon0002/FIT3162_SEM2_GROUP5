@@ -178,7 +178,6 @@ def detectCopyMove(image):
     :param image: A numpy representation of the image (passed through readImage() function)
     :return: True if the image is forged with copy-move, False otherwise.
     """
-
     kp, desc = featureExtraction(image)
     p1, p2 = featureMatching(kp, desc)
     # showImage(image)x
