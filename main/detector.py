@@ -1,3 +1,8 @@
+"""
+Author: Nicholas Roosevelt Wong
+Last updated: 23/10/19
+Description: Python program that detects if an image has been forged.
+"""
 import cv2
 import imutils
 import numpy as np
