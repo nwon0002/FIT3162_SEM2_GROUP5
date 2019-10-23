@@ -145,6 +145,14 @@ def filterOutliers(cluster, points):
 
 
 def plotImage(img, p1, p2, C):
+    """
+    Function to plot the region of forgery on the original image
+    :param img: A numpy representation of the image (passed through readImage())
+    :param p1: A 2d-array representing the first set of points
+    :param p2: A 2d-array representing the second set of points
+    :param C: A 1d-array representing the cluster that each point belongs to
+    :return: None
+    """
     plt.imshow(img)
     plt.axis('off')
 
@@ -161,11 +169,16 @@ def plotImage(img, p1, p2, C):
         plt.plot([x1, x2], [y1, y2], 'c', linestyle=":")
 
     plt.savefig("results.png", bbox_inches='tight', pad_inches=0)
-
     plt.clf()
 
 
-def detect_copy_move(image):
+def detectCopyMove(image):
+    """
+    Main function of the program, detects if an image has been forged with copy-move
+    :param image: A numpy representation of the image (passed through readImage() function)
+    :return: True if the image is forged with copy-move, False otherwise.
+    """
+
     kp, desc = featureExtraction(image)
     p1, p2 = featureMatching(kp, desc)
     # showImage(image)x
@@ -176,12 +189,10 @@ def detect_copy_move(image):
 
     clusters, p1, p2 = hierarchicalClustering(p1, p2, 'ward', 2.2)
 
-    if len(clusters) == 0:
+    if len(clusters) == 0 or len(p1) == 0 or len(p2) == 0:
         # print("No tampering was found")
         return False
 
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     plotImage(image, p1, p2, clusters)
     return True
-
-
