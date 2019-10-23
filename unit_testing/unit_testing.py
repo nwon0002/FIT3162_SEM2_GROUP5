@@ -6,34 +6,43 @@ FP = 0  # False positive
 TN = 0  # True negative
 FN = 0  # False negative
 
-# Function to test the results of the copy-move forgery detection algorithm against the ground truth
-def test_images(paths, img_type):
-    assert img_type in ["original", "forged"], "img_type must be either 'original' or 'forged'"
+def test_images(paths, img_label):
+    """
+    Function to test the results of the copy-move forgery detection algorithm against the ground truth
+    :param paths: List of path to image files
+    :param img_label: label of images
+    :return: None
+    """
+    assert img_label in ["original", "forged"], "img_label must be either 'original' or 'forged'"
 
     global TP
     global FP
     global TN
     global FN
 
+    # Test each image in the paths
     for path in paths:
         img = readImage(path)
         result = detect_copy_move(img)
 
-        if result and img_type == "forged":
+        if result and img_label == "forged":
             TP += 1
 
-        elif result and img_type == "original":
+        elif result and img_label == "original":
             FP += 1
 
-        elif not result and img_type == "original":
+        elif not result and img_label == "original":
             TN += 1
 
-        elif not result and img_type == "forged":
+        elif not result and img_label == "forged":
             FN += 1
 
-
-# Main Function
+            
+            
 def main():
+    """
+    Main Function
+    """
     # Test original images
     original_path = './original/*'
     original_paths = glob(original_path)
