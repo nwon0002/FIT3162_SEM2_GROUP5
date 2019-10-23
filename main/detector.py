@@ -9,16 +9,16 @@ from collections import Counter
 
 def readImage(image_name):
     """
-    Function to read a given image name
+    Function to convert an image into a numpy array representation
     :param image_name: A string representing the name of the image
     :return: The image represented in a numpy.ndarray type
     """
-    return cv2.imread(str(image_name))
+    return cv2.imread(image_name)
 
 
 def showImage(image):
     """
-    Function to display the image to the user. Closes the image window when user presses any key
+    Function to display the image to the user. Closes the image window when the user presses any key
     :param image: An image of type numpy.ndarray
     :return: None
     """
@@ -29,6 +29,11 @@ def showImage(image):
 
 
 def featureExtraction(image):
+    """
+    Function to extract features from the image with the use of SIFT algorithm
+    :param image: An image of type numpy.ndarray
+    :return: A tuple representing (keypoints, descriptors)
+    """
     gray_img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     sift = cv2.xfeatures2d.SIFT_create()
     kp, desc = sift.detectAndCompute(gray_img, None)
@@ -36,26 +41,37 @@ def featureExtraction(image):
 
 
 def featureMatching(keypoints, descriptors):
-    norm = cv2.NORM_L2  # cv2.NORM_L2 is used since we are using the SIFT algorithm
-    k = 10  # number of closest match we want to find for each descriptor
+    """
+    Function to match each keypoint in the image with its closest match
+    :param keypoints: A 1-dimensional array representing all the keypoints extracted from the image
+    :param descriptors: A 2-dimensional array of shape (n, 128), where n is the number of keypoints 
+                        and 128 is the size of each descriptor for each keypoint
+    :return: Returns a tuple (points1, points2), whereby the first element in points2 is the closest match to the first element in points1 and so on.
+             Returns a tuple (None, None), if no matches was found.
+    """
+    #cv2.NORM_L2 is used since we are using the SIFT algorithm
+    norm = cv2.NORM_L2  
+    #number of closest match we want to find for each descriptor
+    k = 10  
 
-    # uses a brute force matcher(compare each descriptor of desc1, with each descriptor of desc2...)
+    #uses a brute force matcher(compare each descriptor of desc1, with each descriptor of desc2...)
     bf_matcher = cv2.BFMatcher(norm)
-    matches = bf_matcher.knnMatch(descriptors, descriptors, k)  # finds 10 closest matches for each desc in desc1 with desc in desc2
+    #finds 10 closest matches for each desc in desc1 with desc in desc2
+    matches = bf_matcher.knnMatch(descriptors, descriptors, k)  
 
-    # apply ratio test to get good matches (2nn test)
+    #apply ratio test to get good matches (2nn test)
     ratio = 0.5
     good_matches_1 = []
     good_matches_2 = []
 
     for match in matches:
-        k = 1   # ignore the first element in the matches array (distance to itself is always 0)
+        k = 1   #ignore the first element in the matches array (distance to itself is always 0)
 
-        while match[k].distance < ratio * match[k + 1].distance:  # d_i/d_(i+1) < T (threshold)
+        while match[k].distance < ratio * match[k + 1].distance:  #d_i/d_(i+1) < T (ratio)
             k += 1
 
         for i in range(1, k):
-            # just to ensure points are spatially separated
+            #just to ensure points are spatially separated
             if pdist(np.array([keypoints[match[i].queryIdx].pt, keypoints[match[i].trainIdx].pt]), "euclidean") > 10:
                 good_matches_1.append(keypoints[match[i].queryIdx])
                 good_matches_2.append(keypoints[match[i].trainIdx])
@@ -64,10 +80,9 @@ def featureMatching(keypoints, descriptors):
     points_2 = [match.pt for match in good_matches_2]
 
     if len(points_1) > 0:
-        points = np.hstack((points_1, points_2))  # column bind
-        unique_points = np.unique(points, axis=0)  # remove any duplicated points
+        points = np.hstack((points_1, points_2))    #column bind
+        unique_points = np.unique(points, axis=0)   #remove any duplicated points
         return np.float32(unique_points[:, 0:2]), np.float32(unique_points[:, 2:4])
-
     else:
         return None, None
 
