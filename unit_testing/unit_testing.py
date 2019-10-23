@@ -1,3 +1,9 @@
+"""
+Author: Khai Yuan Chee
+Last updated: 23/10/19
+Description: Python program to test the accuracy, TPR and FPR of the copy-move detection algorithm
+"""
+
 from detector_testing import detect_copy_move, readImage
 from glob import glob
 
