@@ -7,7 +7,7 @@ Description: GUI of the copy-move detection software
 from tkinter import *
 from tkinter import filedialog, ttk, messagebox
 from PIL import ImageTk, Image
-from detector import detect_copy_move, readImage
+from detector import detectCopyMove, readImage
 
 # Global variables
 IMG_WIDTH = 400
@@ -135,7 +135,7 @@ class GUI(Frame):
         img = readImage(path)
 
         # Run copy-move detection algorithm
-        result = detect_copy_move(img)
+        result = detectCopyMove(img)
 
         # Set the progress bar to 100%
         self.progressBar['value'] = 100
