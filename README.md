@@ -42,10 +42,6 @@ pip install Pillow==6.2.0
 2. Run, app.py
 3. Follow instructions on GUI.
 
-## Known Issues
-
-- Unresponsive page design as our aim mainly focus on the functionality.
-
 ## Versioning
 
 We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags).  
@@ -56,12 +52,6 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 * **Nicholas Roosevelt, Wong** - *28839048* - nwon0007@student.monash.edu
 * **Khai Yuan, Chee** - *28909429* - kche0028@student.monash.edu
 
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
-
 ## Acknowledgments
 
 * Let's graduate fellas
-
