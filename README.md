@@ -42,10 +42,6 @@ pip install Pillow==6.2.0
 2. Run, app.py
 3. Follow instructions on GUI.
 
-## Versioning
-
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags).  
-
 ## Authors
 
 * **Nelson Wei Han, Wong** - *28488563* - nwon0002@student.monash.edu
